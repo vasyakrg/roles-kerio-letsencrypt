@@ -5,108 +5,65 @@
     state: latest
   tags: ssl
 
-- name: Generate dhparams
-  shell: openssl dhparam -out /etc/nginx/dhparams.pem 2048
-  args:
-    creates: /etc/nginx/dhparams.pem
-  tags: ssl
+- name: Kerio-connect start
+  shell: service kerio-connect stop
 
 - name: Create letsencrypt certificate
-  shell: letsencrypt --renew-by-default certonly -a webroot --webroot-path=/var/www/html -m {{ nginx_deploy_letsencrypt_email }} --agree-tos -d {{ item.server_name }}
+  shell: letsencrypt certonly --standalone --expand --keep-until-expiring {{ dry_run }} -m {{ lets_letsencrypt_email }} --agree-tos -d {{ item.server_name }}
   args:
-    creates: "{{ nginx_deploy_certpath }}/{{ item.server_name }}"
-  with_items: "{{ nginx_deploy_vhosts }}"
+    creates: "{{ lets_deploy_certpath }}/{{ item.server_name }}"
+  with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') != 'absent'
+  tags: ssl
+
+- name: Revoke letsencrypt certificate
+  shell: certbot {{ dry_run }} revoke --cert-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".crt --key-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".key
+  with_items: "{{ letsx_deploy_vhosts }}"
+  when: item.state|default('present') == 'absent'
   tags: ssl
 
 - name: Add letsencrypt job for cert renewal
   cron:
-    name: letsencrypt_renewal_{{ item.server_name }}
-    special_time: monthly
-    job: "letsencrypt --renew-by-default certonly -a webroot --webroot-path=/var/www/html -m {{ nginx_deploy_letsencrypt_email }} --agree-tos -d {{ item.server_name }} && service nginx reload"
-  with_items: "{{ nginx_deploy_vhosts }}"
-  when: item.state|default('present') != 'absent'
-  tags: ssl
+    name: letsencrypt_renewal
+    special_time: {{ lets_monthly }}
+    job: "service kerio-connect stop && certbot renew && service kerio-connect start"
+  when: "{{ lets_crontab_enable }}" == 'enable'
 
 - name: Remove letsencrypt job for cert renewal
   cron:
-    name: "letsencrypt_renewal_{{ item.server_name }}"
+    name: letsencrypt_renewal
     state: absent
-  with_items: "{{ nginx_deploy_vhosts }}"
-  when: item.state|default('present') == 'absent'
-  tags: ssl
+  when: "{{ lets_crontab_enable }}" == 'disable'
 
 - name: Add link from letsencrypt to kerio-connect.crt
   file:
     src: "/etc/letsencrypt/live/{{ item.server_name }}/fullchain.pem"
-    dest: "{{ nginx_deploy_certpath }}/{{ item.server_name }}.crt"
+    dest: "{{ lets_deploy_certpath }}/{{ item.server_name }}.crt"
     state: link
-  with_items: "{{ nginx_deploy_vhosts }}"
+  with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') != 'absent'
 
 - name: Add link from letsencrypt to kerio-connect.key
   file:
     src: "/etc/letsencrypt/live/{{ item.server_name }}/privkey.pem"
-    dest: "{{ nginx_deploy_certpath }}/{{ item.server_name }}.key"
+    dest: "{{ lets_deploy_certpath }}/{{ item.server_name }}.key"
     state: link
-  with_items: "{{ nginx_deploy_vhosts }}"
+  with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') != 'absent'
 
 - name: Remove link from letsencrypt to kerio-connect.crt
   file:
-    path: "{{ nginx_deploy_certpath }}/{{ item.server_name }}.crt"
+    path: "{{ lets_deploy_certpath }}/{{ item.server_name }}.crt"
     state: absent
-  with_items: "{{ nginx_deploy_vhosts }}"
+  with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') == 'absent'
 
 - name: Remove link from letsencrypt to kerio-connect.key
   file:
-    path: "{{ nginx_deploy_certpath }}/{{ item.server_name }}.key"
+    path: "{{ lets_deploy_certpath }}/{{ item.server_name }}.key"
     state: absent
-  with_items: "{{ nginx_deploy_vhosts }}"
+  with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') == 'absent'
 
-- name: Ensure nginx_vhost_path exists
-  file:
-    path: "{{ nginx_deploy_vhost_path }}"
-    state: directory
-  notify: reload nginx
-
-- name: Add managed vhost config files
-  template:
-    src: "{{ item.template|default(nginx_deploy_vhost_template) }}"
-    dest: "{{ nginx_deploy_vhost_path }}/{{ (item.server_name.split(' ')[0] ~ '.conf') }}"
-    force: true
-    owner: root
-    group: "{{ nginx_deploy_root_group }}"
-    mode: 0644
-  when: item.state|default('present') != 'absent'
-  with_items: "{{ nginx_deploy_vhosts }}"
-  notify: restart nginx
-
-- name: Remove managed vhost config files
-  file:
-    path: "{{ nginx_deploy_vhost_path }}/{{ (item.server_name.split(' ')[0] ~ '.conf') }}"
-    state: absent
-  when: item.state|default('present') == 'absent'
-  with_items: "{{ nginx_deploy_vhosts }}"
-  notify: restart nginx
-
-- name: Ensure nginx_logs_path exists
-  file:
-    path: "{{ nginx_deploy_logs_path }}/{{ item.server_name }}"
-    state: directory
-  with_items: "{{ nginx_deploy_vhosts }}"
-  when: item.state|default('present') != 'absent'
-  notify: reload nginx
-
-- name: Remove nginx_logs_path exists
-  file:
-    path: "{{ nginx_deploy_logs_path }}/{{ item.server_name }}"
-    state: absent
-  with_items: "{{ nginx_deploy_vhosts }}"
-  when: item.state|default('present') == 'absent'
-  notify: reload nginx
-
-- name: Kerio-connect reload
-  shell: service kerio-connect stop && service kerio-connect start
+- name: Kerio-connect start
+  shell: service kerio-connect start

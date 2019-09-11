@@ -1,23 +1,19 @@
-### Роль nginx_deploy - для kerio-connect (debian 9)
-- по списку доменов, создает для nginx конфиги, регистрирует через Letsencrypt сертификаты и подсовывает их в kerio-connect
+### Роль lets_deploy - для kerio-connect (debian 9)
+- по списку доменов, регистрирует через Letsencrypt сертификаты и подсовывает их в kerio-connect
 
 #### Переназначаемые переменные:
 ```
-nginx_deploy_listen_http: 80
-nginx_deploy_listen_https: 443
+lets_deploy_certpath: "/opt/kerio/mailserver/sslcert"
+lets_deploy_letsencrypt_email: test@mail.ru
 
-nginx_deploy_vhost_template: "vhost.j2"
-nginx_deploy_vhost_path: "/etc/nginx/sites-enabled"
-nginx_deploy_logs_path: "/var/log/nginx"
-nginx_deploy_root_group: "www-data"
-nginx_deploy_certpath: "/opt/kerio/mailserver/sslcert"
-nginx_deploy_letsencrypt_email: test@mail.ru
-
-nginx_deploy_vhosts:
+lets_deploy_vhosts:
   - server_name: test.local
-    file_name: test.local.conf
-    state: present
-    index: present
+    state: present # or **absent**
+
+lets_monthly: "monthly" # crontab time job
+lets_crontab_enable: "enable" # crontab enable to add job, or "disable" to delete job
+
+lets_dry_run: "--dry-run" # dry_run execute certbot or "" to run actual job
 ```
 
 ##### Автор
