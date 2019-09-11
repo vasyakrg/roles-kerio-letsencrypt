@@ -25,15 +25,15 @@
 - name: Add letsencrypt job for cert renewal
   cron:
     name: letsencrypt_renewal
-    special_time: {{ lets_monthly }}
+    special_time: "{{ lets_monthly }}"
     job: "service kerio-connect stop && certbot renew && service kerio-connect start"
-  when: "{{ lets_crontab_enable }}" == 'enable'
+  when: lets_crontab_enable == 'enable'
 
 - name: Remove letsencrypt job for cert renewal
   cron:
     name: letsencrypt_renewal
     state: absent
-  when: "{{ lets_crontab_enable }}" == 'disable'
+  when: lets_crontab_enable == 'disable'
 
 - name: Add link from letsencrypt to kerio-connect.crt
   file:
