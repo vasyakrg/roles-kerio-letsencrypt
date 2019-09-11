@@ -1,4 +1,5 @@
 lets_deploy_certpath: "/opt/kerio/mailserver/sslcert"
+lets_install_path: "/etc/letsencrypt/archive"
 lets_letsencrypt_email: test@mail.ru
 lets_dry_run: "--dry-run"
 lets_monthly: "monthly"
