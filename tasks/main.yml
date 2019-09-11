@@ -5,8 +5,11 @@
     state: latest
   tags: ssl
 
-- name: Kerio-connect start
-  shell: service kerio-connect stop
+- name: Kerio-connect stoping
+  service:
+    name: kerio-connect
+    state: stopped
+
 
 - name: Create letsencrypt certificate
   shell: certbot certonly --standalone --expand --keep-until-expiring {{ lets_dry_run }} -m {{ lets_letsencrypt_email }} --agree-tos -d {{ item.server_name }}
@@ -41,7 +44,7 @@
     dest: "{{ lets_deploy_certpath }}/{{ item.server_name }}.crt"
     state: link
   with_items: "{{ lets_deploy_vhosts }}"
-  when: item.state|default('present') != 'absent'
+  when: item.state|default('present') != 'absent' and lets_dry_run != "--dry-run"
 
 - name: Add link from letsencrypt to kerio-connect.key
   file:
@@ -49,21 +52,23 @@
     dest: "{{ lets_deploy_certpath }}/{{ item.server_name }}.key"
     state: link
   with_items: "{{ lets_deploy_vhosts }}"
-  when: item.state|default('present') != 'absent'
+  when: item.state|default('present') != 'absent' and lets_dry_run != "--dry-run"
 
 - name: Remove link from letsencrypt to kerio-connect.crt
   file:
     path: "{{ lets_deploy_certpath }}/{{ item.server_name }}.crt"
     state: absent
   with_items: "{{ lets_deploy_vhosts }}"
-  when: item.state|default('present') == 'absent'
+  when: item.state|default('present') == 'absent' and lets_dry_run != "--dry-run"
 
 - name: Remove link from letsencrypt to kerio-connect.key
   file:
     path: "{{ lets_deploy_certpath }}/{{ item.server_name }}.key"
     state: absent
   with_items: "{{ lets_deploy_vhosts }}"
-  when: item.state|default('present') == 'absent'
+  when: item.state|default('present') == 'absent' and lets_dry_run != "--dry-run"
 
-- name: Kerio-connect start
-  shell: service kerio-connect start
+- name: Kerio-connect starting
+  service:
+    name: kerio-connect
+    state: started
