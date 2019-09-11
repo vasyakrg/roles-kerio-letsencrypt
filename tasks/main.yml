@@ -9,7 +9,7 @@
   shell: service kerio-connect stop
 
 - name: Create letsencrypt certificate
-  shell: letsencrypt certonly --standalone --expand --keep-until-expiring {{ dry_run }} -m {{ lets_letsencrypt_email }} --agree-tos -d {{ item.server_name }}
+  shell: certbot certonly --standalone --expand --keep-until-expiring {{ lets_dry_run }} -m {{ lets_letsencrypt_email }} --agree-tos -d {{ item.server_name }}
   args:
     creates: "{{ lets_deploy_certpath }}/{{ item.server_name }}"
   with_items: "{{ lets_deploy_vhosts }}"
@@ -17,7 +17,7 @@
   tags: ssl
 
 - name: Revoke letsencrypt certificate
-  shell: certbot {{ dry_run }} revoke --cert-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".crt --key-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".key
+  shell: certbot {{ lets_dry_run }} revoke --cert-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".crt --key-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".key
   with_items: "{{ letsx_deploy_vhosts }}"
   when: item.state|default('present') == 'absent'
   tags: ssl
