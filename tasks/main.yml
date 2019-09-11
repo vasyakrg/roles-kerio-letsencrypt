@@ -19,12 +19,7 @@
   when: item.state|default('present') != 'absent'
 
 - name: Revoke letsencrypt certificate
-  shell: certbot {{ lets_dry_run }} revoke --standalone -d {{ item.server_name }} --cert-path {{ lets_install_path }}/{{ item.server_name }}/cert1.pem >> /dev/null
-  with_items: "{{ lets_deploy_vhosts }}"
-  when: item.state|default('present') == 'absent'
-
-- name: Delete letsencrypt certificate
-  shell: certbot {{ lets_dry_run }} delete --cert-name "{{ item.server_name }}"
+  shell: certbot {{ lets_dry_run }} revoke --standalone -d {{ item.server_name }} --cert-path {{ lets_install_path }}/{{ item.server_name }}/cert1.pem --delete
   with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') == 'absent'
 
