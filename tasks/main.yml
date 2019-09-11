@@ -17,13 +17,11 @@
     creates: "{{ lets_deploy_certpath }}/{{ item.server_name }}"
   with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') != 'absent'
-  tags: ssl
 
 - name: Revoke letsencrypt certificate
   shell: certbot {{ lets_dry_run }} revoke --cert-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".crt --key-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".key
-  with_items: "{{ letsx_deploy_vhosts }}"
+  with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') == 'absent'
-  tags: ssl
 
 - name: Add letsencrypt job for cert renewal
   cron:
