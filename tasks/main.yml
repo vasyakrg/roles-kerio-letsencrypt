@@ -19,7 +19,7 @@
   when: item.state|default('present') != 'absent'
 
 - name: Revoke letsencrypt certificate
-  shell: certbot {{ lets_dry_run }} revoke --cert-path "{{ lets_install_path }}/{{ item.server_name }}"/cert1.crt --key-path "{{ lets_deploy_certpath }}/{{ item.server_name }}".key
+  shell: certbot {{ lets_dry_run }} revoke --cert-path "{{ lets_install_path }}/{{ item.server_name }}"/cert1.pem
   with_items: "{{ lets_deploy_vhosts }}"
   when: item.state|default('present') == 'absent'
 
